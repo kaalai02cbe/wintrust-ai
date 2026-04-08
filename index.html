@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wintrust AI Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1B3A6B;--navy2:#234a8a;--navy-light:#e8eef7;
+  --gold:#B8943F;--gold-light:#D4AF6A;--gold-dim:rgba(184,148,63,.1);
+  --white:#FFFFFF;--bg:#F4F6FA;--bg2:#EEF1F7;
+  --border:#D8DEE9;--border2:#C5CCE0;
+  --text:#1A2340;--text2:#4A5578;--muted:#8A96B0;
+  --green:#2E9E6B;--red:#D94040;
+  --shadow:0 2px 12px rgba(27,58,107,.1);
+  --shadow2:0 4px 24px rgba(27,58,107,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:11px 14px;display:flex;align-items:center;gap:9px;flex-shrink:0;box-shadow:0 2px 8px rgba(27,58,107,.35);}
+.logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;}
+.brand{flex:1;}
+.brand h1{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:.3px;}
+.brand p{font-size:9px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.8px;}
+.topbar-btns{display:flex;gap:5px;align-items:center;}
+.tb-btn{padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);background:rgba(255,255,255,.08);cursor:pointer;font-family:'Nunito',sans-serif;transition:all .18s;white-space:nowrap;}
+.tb-btn:hover{background:rgba(255,255,255,.16);}
+.tb-btn.gold{border-color:rgba(212,175,106,.5);color:var(--gold-light);background:rgba(184,148,63,.12);}
+.tb-btn.drive{border-color:rgba(78,181,116,.5);color:#7DEFA8;background:rgba(78,181,116,.1);}
+.tb-btn.drive.connected{background:rgba(78,181,116,.2);border-color:#4eb574;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#4CAF7D;animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+/* PANEL OVERLAY */
+.panel-overlay{position:fixed;inset:0;background:rgba(10,20,50,.4);z-index:100;display:none;align-items:flex-end;}
+.panel-overlay.open{display:flex;}
+.panel{background:var(--white);border-radius:18px 18px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;animation:slideUp .22s ease;box-shadow:0 -4px 28px rgba(27,58,107,.2);}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.panel-hdr{padding:14px 14px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.panel-hdr h2{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--navy);flex:1;}
+.panel-close{width:26px;height:26px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.panel-body{flex:1;overflow-y:auto;padding:12px 14px;}
+.panel-body::-webkit-scrollbar{width:3px;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* DRIVE PANEL */
+.drive-status{padding:12px;background:var(--bg);border-radius:10px;border:1.5px solid var(--border);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.drive-status-icon{font-size:24px;}
+.drive-status-text{flex:1;}
+.drive-status-text h3{font-size:13px;font-weight:700;color:var(--navy);}
+.drive-status-text p{font-size:11px;color:var(--muted);margin-top:2px;}
+.btn-drive{padding:9px 16px;border-radius:9px;background:linear-gradient(135deg,#1a73e8,#0d5bba);color:#fff;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:12.5px;font-weight:700;transition:opacity .18s;width:100%;margin-bottom:8px;}
+.btn-drive:hover{opacity:.88;}
+.folder-grid{display:flex;flex-direction:column;gap:6px;}
+.folder-card{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .16s;}
+.folder-card:hover{border-color:var(--navy);background:var(--navy-light);}
+.folder-card.active{border-color:var(--navy);background:var(--navy-light);}
+.folder-icon{font-size:20px;flex-shrink:0;}
+.folder-info{flex:1;min-width:0;}
+.folder-name{font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.folder-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.folder-files{font-size:11px;color:var(--green);margin-top:3px;}
+.folder-use{padding:5px 10px;border-radius:7px;background:var(--navy);color:#fff;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;flex-shrink:0;}
+
+/* FILE VIEWER */
+.file-list{display:flex;flex-direction:column;gap:5px;margin-top:8px;}
+.file-item{padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .16s;}
+.file-item:hover{border-color:var(--navy);background:var(--navy-light);}
+.file-item.loaded{border-color:var(--green);background:rgba(46,158,107,.05);}
+.file-type{font-size:16px;flex-shrink:0;}
+.file-name{font-size:12px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-status{font-size:10px;color:var(--muted);flex-shrink:0;}
+.file-item.loaded .file-status{color:var(--green);}
+
+/* CLIENT FORM */
+.section-label{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;}
+.cf{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;padding:11px;background:var(--bg);border-radius:10px;border:1.5px solid var(--border);}
+.cf-row{display:flex;gap:6px;}
+.finput{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:12.5px;color:var(--text);background:var(--white);outline:none;transition:border-color .18s;}
+.finput:focus{border-color:var(--navy);}
+.finput::placeholder{color:var(--muted);}
+.fta{min-height:55px;resize:none;}
+.btn-p{padding:8px 14px;border-radius:8px;background:var(--navy);color:#fff;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:12.5px;font-weight:600;transition:background .18s;}
+.btn-p:hover{background:var(--navy2);}
+
+/* CLIENT CARDS */
+.clist{display:flex;flex-direction:column;gap:6px;}
+.ccard{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;display:flex;align-items:flex-start;gap:8px;cursor:pointer;transition:all .16s;}
+.ccard:hover,.ccard.active{border-color:var(--navy);background:var(--navy-light);}
+.cc-info{flex:1;min-width:0;}
+.cc-name{font-size:13px;font-weight:700;color:var(--navy);}
+.cc-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.cc-issue{font-size:11.5px;color:var(--text2);margin-top:4px;line-height:1.4;}
+.cc-drive{font-size:10.5px;color:var(--green);margin-top:3px;}
+.cc-btns{display:flex;gap:4px;flex-shrink:0;}
+.cc-btn{padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;border:none;cursor:pointer;font-family:'Nunito',sans-serif;}
+.cc-use{background:var(--navy);color:#fff;}
+.cc-del{background:#FEE2E2;color:var(--red);}
+.empty{text-align:center;padding:28px 14px;color:var(--muted);font-size:12.5px;line-height:1.7;}
+
+/* SAVED CARDS */
+.scard{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 11px;margin-bottom:7px;}
+.sc-hdr{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.sc-badge{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:var(--navy-light);color:var(--navy);}
+.sc-date{font-size:10px;color:var(--muted);margin-left:auto;}
+.sc-prev{font-size:12px;color:var(--text2);line-height:1.5;max-height:55px;overflow:hidden;}
+.sc-btns{display:flex;gap:5px;margin-top:7px;}
+.sc-btn{padding:4px 10px;border-radius:6px;font-size:10.5px;font-weight:600;border:none;cursor:pointer;font-family:'Nunito',sans-serif;}
+.sc-copy{background:var(--navy);color:#fff;}
+.sc-reuse{background:var(--navy-light);color:var(--navy);}
+.sc-del{background:#FEE2E2;color:var(--red);}
+
+/* CONTROLS */
+.ctrl-panel{background:var(--white);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;box-shadow:0 1px 4px rgba(27,58,107,.05);}
+.ctrl-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.ctrl-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);min-width:46px;font-weight:700;}
+.pills{display:flex;gap:3px;flex-wrap:wrap;}
+.pill{padding:4px 9px;border-radius:14px;font-size:11px;font-weight:500;border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;background:transparent;font-family:'Nunito',sans-serif;white-space:nowrap;}
+.pill:hover{border-color:var(--navy);color:var(--navy);}
+.pill.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+/* CLIENT BAR */
+.client-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.ac-wrap{flex:1;display:flex;align-items:center;gap:7px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;padding:5px 10px;min-height:34px;cursor:pointer;transition:border-color .18s;}
+.ac-wrap:hover{border-color:var(--navy);}
+.ac-wrap.has-drive{border-color:rgba(46,158,107,.4);}
+.ac-ph{font-size:12px;color:var(--muted);flex:1;}
+.ac-info{flex:1;}
+.ac-name{font-size:12px;font-weight:700;color:var(--navy);}
+.ac-sub{font-size:10.5px;color:var(--muted);}
+.ac-drive-tag{font-size:10px;color:var(--green);font-weight:600;}
+.ac-x{width:20px;height:20px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;}
+.ac-x.show{display:flex;}
+
+/* CONTEXT BAR */
+.context-bar{background:rgba(46,158,107,.08);border-bottom:1px solid rgba(46,158,107,.2);padding:5px 12px;display:none;align-items:center;gap:6px;flex-shrink:0;}
+.context-bar.show{display:flex;}
+.ctx-icon{font-size:13px;}
+.ctx-text{font-size:11px;color:var(--green);font-weight:600;flex:1;}
+.ctx-files{font-size:10px;color:var(--muted);}
+.ctx-clear{font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;}
+
+/* CHIPS */
+.chips-bar{padding:6px 12px;border-bottom:1px solid var(--border);display:flex;gap:5px;overflow-x:auto;flex-shrink:0;background:var(--white);}
+.chips-bar::-webkit-scrollbar{display:none;}
+.chip{padding:4px 10px;border-radius:13px;font-size:11px;font-weight:500;border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;background:var(--bg);flex-shrink:0;font-family:'Nunito',sans-serif;}
+.chip:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-light);}
+
+/* CHAT */
+.chat{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg);}
+.chat::-webkit-scrollbar{width:3px;}
+.chat::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.welcome{text-align:center;padding:28px 14px;animation:fadeUp .4s ease;}
+.w-seal{width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--gold-light);box-shadow:var(--shadow2);}
+.welcome h2{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--navy);margin-bottom:5px;}
+.welcome p{font-size:12px;color:var(--muted);line-height:1.7;max-width:290px;margin:0 auto;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.msg{display:flex;gap:7px;animation:fadeUp .2s ease;}
+.msg.user{flex-direction:row-reverse;}
+.av{width:27px;height:27px;border-radius:7px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.av.ai{background:linear-gradient(135deg,var(--navy),var(--navy2));color:var(--gold-light);font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;}
+.av.u{background:var(--bg2);border:1.5px solid var(--border);font-size:12px;}
+.bubble{max-width:86%;padding:9px 12px;border-radius:11px;font-size:13px;line-height:1.7;}
+.msg.user .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:3px;}
+.msg.ai .bubble{background:var(--white);border:1.5px solid var(--border);border-bottom-left-radius:3px;color:var(--text);box-shadow:var(--shadow);}
+.msg.ai .bubble strong{color:var(--navy);font-weight:700;}
+.bubble ul,.bubble ol{padding-left:15px;margin:4px 0;}
+.bubble li{margin:3px 0;}
+.m-badge{display:inline-block;margin-bottom:5px;padding:2px 8px;border-radius:7px;font-size:10px;font-weight:700;background:var(--navy-light);color:var(--navy);letter-spacing:.3px;}
+.img-prev{max-width:180px;max-height:130px;border-radius:8px;margin-bottom:5px;display:block;border:1px solid rgba(255,255,255,.15);}
+.msg-acts{display:flex;gap:5px;padding-left:34px;margin-top:-3px;flex-wrap:wrap;}
+.act-btn{padding:3px 9px;border-radius:6px;font-size:10.5px;font-weight:600;border:1.5px solid var(--border);color:var(--text2);cursor:pointer;background:var(--white);font-family:'Nunito',sans-serif;transition:all .16s;}
+.act-btn:hover{border-color:var(--navy);color:var(--navy);}
+.save-act{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.save-act:hover{background:var(--gold);color:#fff;}
+
+/* THINKING */
+.thinking{display:flex;gap:7px;}
+.think-bub{background:var(--white);border:1.5px solid var(--border);border-radius:11px;border-bottom-left-radius:3px;padding:10px 13px;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);}
+.think-txt{font-size:11.5px;color:var(--muted);font-style:italic;}
+.dots i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--navy);animation:hop 1.2s infinite;margin-right:3px;}
+.dots i:nth-child(2){animation-delay:.2s;}
+.dots i:nth-child(3){animation-delay:.4s;}
+@keyframes hop{0%,60%,100%{transform:translateY(0);opacity:.2;}30%{transform:translateY(-5px);opacity:1;}}
+
+/* INPUT */
+.input-area{padding:7px 12px 9px;border-top:1px solid var(--border);background:var(--white);flex-shrink:0;}
+.attach-row{display:flex;gap:5px;flex-wrap:wrap;padding-bottom:5px;}
+.att-thumb{position:relative;width:44px;height:44px;border-radius:7px;overflow:hidden;border:1.5px solid var(--border);}
+.att-thumb img{width:100%;height:100%;object-fit:cover;}
+.att-rm{position:absolute;top:1px;right:1px;width:15px;height:15px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;}
+.input-wrap{display:flex;gap:6px;align-items:flex-end;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:6px 8px;transition:border-color .18s;}
+.input-wrap:focus-within{border-color:var(--navy);}
+.ia-btns{display:flex;gap:3px;flex-shrink:0;}
+.ia-btn{width:29px;height:29px;border-radius:7px;background:transparent;border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .16s;}
+.ia-btn:hover{background:var(--navy-light);border-color:var(--navy);}
+.ia-btn.rec{background:#FEE2E2;border-color:var(--red);animation:rpulse 1s infinite;}
+@keyframes rpulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Nunito',sans-serif;font-size:13px;resize:none;max-height:80px;min-height:20px;line-height:1.5;}
+textarea::placeholder{color:var(--muted);}
+.send-btn{width:31px;height:31px;border-radius:8px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .16s;}
+.send-btn:hover{background:var(--navy2);transform:scale(1.05);}
+.send-btn:active{transform:scale(.95);}
+.send-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;}
+.send-btn svg{width:13px;height:13px;fill:#fff;}
+.hint{font-size:10px;color:var(--muted);text-align:center;margin-top:5px;}
+#fileInput{display:none;}
+
+/* TOAST */
+.toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--navy);color:#fff;padding:7px 16px;border-radius:18px;font-size:12px;font-weight:600;opacity:0;transition:all .22s;z-index:300;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow2);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* LOADING SPINNER */
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<!-- ⚙️ PASTE YOUR KEYS HERE -->
+<script>
+const API_KEY = 'AIzaSyDsyxa2FWORaBJtNqAznP9d3YyRl_XuElc';
+const CLIENT_ID = '71713290429-emirlb05nl5erlkjvrm7j0skpcfoj2l2.apps.googleusercontent.com';
+</script>
+
+<div class="toast" id="toast"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">W</div>
+  <div class="brand">
+    <h1>Wintrust AI Pro</h1>
+    <p>wintrustsolutions.com</p>
+  </div>
+  <div class="topbar-btns">
+    <div class="live-dot"></div>
+    <button class="tb-btn drive" id="driveBtn" onclick="openPanel('drivePanel')">📁 Drive</button>
+    <button class="tb-btn" onclick="openPanel('cPanel')">👥 Clients</button>
+    <button class="tb-btn gold" onclick="openPanel('sPanel')">💾 Saved</button>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="ctrl-panel">
+  <div class="ctrl-row">
+    <span class="ctrl-lbl">Mode</span>
+    <div class="pills" id="modeG">
+      <button class="pill active" data-val="whatsapp" onclick="setPill('modeG',this)">📱 WhatsApp</button>
+      <button class="pill" data-val="legal" onclick="setPill('modeG',this)">⚖️ Legal</button>
+      <button class="pill" data-val="social" onclick="setPill('modeG',this)">📸 Social</button>
+      <button class="pill" data-val="blog" onclick="setPill('modeG',this)">✍️ Blog</button>
+      <button class="pill" data-val="email" onclick="setPill('modeG',this)">📧 Email</button>
+      <button class="pill" data-val="notice" onclick="setPill('modeG',this)">🔍 Notice</button>
+    </div>
+  </div>
+  <div class="ctrl-row">
+    <span class="ctrl-lbl">Lang</span>
+    <div class="pills" id="langG">
+      <button class="pill active" data-val="bilingual" onclick="setPill('langG',this)">🌐 Both</button>
+      <button class="pill" data-val="tamil" onclick="setPill('langG',this)">தமிழ்</button>
+      <button class="pill" data-val="english" onclick="setPill('langG',this)">English</button>
+    </div>
+    <span class="ctrl-lbl" style="margin-left:7px">To</span>
+    <div class="pills" id="recipG">
+      <button class="pill active" data-val="client" onclick="setPill('recipG',this)">👤 Client</button>
+      <button class="pill" data-val="officer" onclick="setPill('recipG',this)">🏛️ Officer</button>
+      <button class="pill" data-val="bank" onclick="setPill('recipG',this)">🏦 Bank</button>
+      <button class="pill" data-val="court" onclick="setPill('recipG',this)">⚖️ Court</button>
+      <button class="pill" data-val="public" onclick="setPill('recipG',this)">🌍 Public</button>
+    </div>
+    <span class="ctrl-lbl" style="margin-left:7px">Len</span>
+    <div class="pills" id="lenG">
+      <button class="pill" data-val="short" onclick="setPill('lenG',this)">S</button>
+      <button class="pill active" data-val="medium" onclick="setPill('lenG',this)">M</button>
+      <button class="pill" data-val="detailed" onclick="setPill('lenG',this)">L</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT BAR -->
+<div class="client-bar">
+  <div class="ac-wrap" id="acWrap" onclick="openPanel('cPanel')">
+    <span style="font-size:13px;flex-shrink:0">🗂️</span>
+    <span class="ac-ph" id="acPh">Tap to select or add a client...</span>
+    <div id="acInfo" style="display:none;flex:1">
+      <div class="ac-name" id="acName"></div>
+      <div class="ac-sub" id="acSub"></div>
+      <div class="ac-drive-tag" id="acDriveTag" style="display:none">📁 Drive folder linked</div>
+    </div>
+  </div>
+  <div class="ac-x" id="acX" onclick="clearClient(event)">✕</div>
+</div>
+
+<!-- CONTEXT BAR (shows when Drive files loaded) -->
+<div class="context-bar" id="contextBar">
+  <span class="ctx-icon">📁</span>
+  <span class="ctx-text" id="ctxText">Drive context loaded</span>
+  <span class="ctx-files" id="ctxFiles"></span>
+  <span class="ctx-clear" onclick="clearDriveContext()">✕ Clear</span>
+</div>
+
+<!-- CHIPS -->
+<div class="chips-bar" id="chipsBar"></div>
+
+<!-- CHAT -->
+<div class="chat" id="chat">
+  <div class="welcome" id="welcome">
+    <div class="w-seal">W</div>
+    <h2>Vanakkam, Kalai!</h2>
+    <p>📁 Drive connect pannunga → client folder select pannunga → AI automatically reads all documents and uses as context.</p>
+  </div>
+</div>
+
+<!-- INPUT -->
+<div class="input-area">
+  <div class="attach-row" id="attachRow"></div>
+  <div class="input-wrap">
+    <div class="ia-btns">
+      <button class="ia-btn" title="Attach" onclick="document.getElementById('fileInput').click()">📎</button>
+      <button class="ia-btn" id="voiceBtn" title="Voice" onclick="toggleVoice()">🎙️</button>
+    </div>
+    <textarea id="userInput" placeholder="உங்கள் idea இங்க சொல்லுங்க..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="send()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+  <div class="hint">📁 Drive · 📋 Paste screenshot · 🎙️ Voice · 📎 Attach · Shift+Enter new line</div>
+  <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(event)"/>
+</div>
+
+<!-- DRIVE PANEL -->
+<div class="panel-overlay" id="drivePanel">
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>📁</span><h2>Google Drive</h2>
+      <button class="panel-close" onclick="closePanel('drivePanel')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="drive-status" id="driveStatus">
+        <span class="drive-status-icon">☁️</span>
+        <div class="drive-status-text">
+          <h3 id="driveStatusTitle">Not Connected</h3>
+          <p id="driveStatusSub">Connect to access your client folders</p>
+        </div>
+      </div>
+      <button class="btn-drive" id="driveConnectBtn" onclick="connectDrive()">
+        🔐 Sign in with Google Drive
+      </button>
+      <div id="driveFolderSection" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">📂 Your Client Folders</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Select a folder to load client documents as AI context</div>
+        <div class="folder-grid" id="folderGrid">
+          <div class="empty">Loading folders...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PANEL -->
+<div class="panel-overlay" id="cPanel">
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>👥</span><h2>Client Database</h2>
+      <button class="panel-close" onclick="closePanel('cPanel')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="section-label">➕ Add New Client</div>
+      <div class="cf">
+        <div class="cf-row">
+          <input class="finput" id="cfN" placeholder="Full Name *"/>
+          <input class="finput" id="cfPh" placeholder="Phone"/>
+        </div>
+        <div class="cf-row">
+          <input class="finput" id="cfG" placeholder="GSTIN (if any)"/>
+          <input class="finput" id="cfP" placeholder="PAN (if any)"/>
+        </div>
+        <textarea class="finput fta" id="cfI" placeholder="Case notes: issue, notice type, amount, status..."></textarea>
+        <button class="btn-p" onclick="addClient()">💾 Save Client</button>
+      </div>
+      <div class="section-label">📋 Saved Clients</div>
+      <div class="clist" id="cList"><div class="empty">No clients saved yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVED PANEL -->
+<div class="panel-overlay" id="sPanel">
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>💾</span><h2>Saved Outputs</h2>
+      <button class="panel-close" onclick="closePanel('sPanel')">✕</button>
+    </div>
+    <div class="panel-body" id="sList"><div class="empty">No saved outputs yet.</div></div>
+  </div>
+</div>
+
+<!-- Google APIs -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+
+<script>
+// STATE
+let messages=[], isLoading=false, attachedImages=[], activeClient=null;
+let recognition=null, isRecording=false;
+let driveConnected=false, accessToken=null;
+let driveContext='', driveContextFiles=[];
+const S={mode:'whatsapp',lang:'bilingual',len:'medium',recip:'client'};
+const SCOPES='https://www.googleapis.com/auth/drive.readonly';
+
+// STORAGE
+const ls={
+  get:(k,d=[])=>{try{return JSON.parse(localStorage.getItem('wt_'+k))||d;}catch{return d;}},
+  set:(k,v)=>{try{localStorage.setItem('wt_'+k,JSON.stringify(v));}catch{}}
+};
+
+// TOAST
+function toast(m,dur=2200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+// PANELS
+function openPanel(id){document.getElementById(id).classList.add('open');if(id==='cPanel')renderClients();if(id==='sPanel')renderSaved();}
+function closePanel(id){document.getElementById(id).classList.remove('open');}
+
+// PILLS
+function setPill(g,el){
+  document.querySelectorAll(`#${g} .pill`).forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const m={modeG:'mode',langG:'lang',lenG:'len',recipG:'recip'};
+  S[m[g]]=el.dataset.val;
+  if(g==='modeG')updateChips();
+}
+
+// CHIPS
+const CS={
+  whatsapp:[['⏰ GST Reminder','GST filing deadline reminder to client'],['📨 Notice Reply','Client received GST notice — draft reply'],['🔁 Follow-up','Follow up with lead who did not respond'],['🤝 Welcome','New client onboarding welcome message'],['📋 Doc Request','Request documents for ITR filing'],['💰 Payment','Payment reminder to client']],
+  legal:[['📄 GST Reply','Formal reply letter to GST department demand notice'],['🏦 Bank Letter','Letter to bank requesting account unfreeze'],['📝 Affidavit','Affidavit of non-involvement in business'],['🔄 Rectification','Application for rectification of demand order'],['🏛️ Stay','Stay application against GST demand'],['⚖️ Grievance','Grievance letter to Assistant Commissioner']],
+  social:[['📸 ITR Post','ITR filing season post for Instagram'],['💡 GST Tip','Quick GST compliance tip for MSMEs'],['🎯 Promo','Tax service promotional post for Coimbatore'],['📊 Deadline','Tax deadline alert post'],['🏆 Win','Client success story post'],['❓ FAQ','Common tax FAQ answer post']],
+  blog:[['📖 GST Guide','GST registration guide for Coimbatore MSMEs'],['💼 ITR Tips','ITR filing tips for salaried employees'],['🔔 Notice','What to do when you receive a GST notice'],['🏭 MSME','Benefits of Udyam MSME registration'],['📊 Planning','Year-end tax planning tips'],['🌍 NRI','NRI ITR filing complete guide']],
+  email:[['📧 Proposal','Professional service proposal email'],['🔁 Follow-up','Follow up after consultation email'],['📋 Engagement','Client engagement letter'],['💰 Invoice','Fee invoice covering note'],['📄 Docs','Document checklist request email'],['✅ Done','Service completion confirmation email']],
+  notice:[['🔍 Analyze','Analyze this notice and provide full action plan'],['⏱️ Deadline','What is the response deadline for this notice'],['📋 Docs','What documents do I need for this notice'],['⚖️ Sections','Which legal sections apply to this notice']]
+};
+function updateChips(){
+  document.getElementById('chipsBar').innerHTML=(CS[S.mode]||CS.whatsapp).map(([l,v])=>`<div class="chip" onclick="useChip('${v.replace(/'/g,"\\'")}')">${l}</div>`).join('');
+}
+function useChip(t){const i=document.getElementById('userInput');i.value=t;autoResize(i);i.focus();}
+
+// ── GOOGLE DRIVE ──
+let tokenClient=null;
+
+function connectDrive(){
+  if(typeof google==='undefined'){toast('⚠️ Google API not loaded. Check internet connection.');return;}
+  toast('🔐 Opening Google Sign-in...',3000);
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES,
+    callback:(resp)=>{
+      if(resp.error){toast('❌ Sign-in failed: '+resp.error);return;}
+      accessToken=resp.access_token;
+      driveConnected=true;
+      updateDriveUI();
+      loadFolders();
+    }
+  });
+  tokenClient.requestAccessToken({prompt:'consent'});
+}
+
+function updateDriveUI(){
+  document.getElementById('driveStatusTitle').textContent='Connected ✓';
+  document.getElementById('driveStatusSub').textContent='Your Google Drive is linked';
+  document.getElementById('driveStatus').style.background='rgba(46,158,107,.08)';
+  document.getElementById('driveStatus').style.borderColor='rgba(46,158,107,.3)';
+  document.getElementById('driveConnectBtn').textContent='🔄 Refresh Folders';
+  document.getElementById('driveConnectBtn').style.background='linear-gradient(135deg,#2E9E6B,#1a7a52)';
+  document.getElementById('driveFolderSection').style.display='block';
+  document.getElementById('driveBtn').classList.add('connected');
+  document.getElementById('driveBtn').textContent='📁 Drive ✓';
+}
+
+async function loadFolders(){
+  const grid=document.getElementById('folderGrid');
+  grid.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:12px;color:var(--muted);font-size:12px"><div class="spinner"></div>Loading your client folders...</div>';
+  try{
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name,modifiedTime)&orderBy=name&pageSize=50`,{headers:{Authorization:'Bearer '+accessToken}});
+    const data=await res.json();
+    if(data.error){grid.innerHTML='<div class="empty">Error loading folders. Please reconnect.</div>';return;}
+    const folders=data.files||[];
+    if(!folders.length){grid.innerHTML='<div class="empty">No folders found in your Drive.</div>';return;}
+    grid.innerHTML=folders.map(f=>`
+      <div class="folder-card" id="fc_${f.id}" onclick="selectDriveFolder('${f.id}','${f.name.replace(/'/g,"\\'")}')">
+        <span class="folder-icon">📁</span>
+        <div class="folder-info">
+          <div class="folder-name">${f.name}</div>
+          <div class="folder-meta">Modified: ${new Date(f.modifiedTime).toLocaleDateString('en-IN')}</div>
+          <div class="folder-files" id="ff_${f.id}"></div>
+        </div>
+        <button class="folder-use">Load</button>
+      </div>`).join('');
+  }catch(e){grid.innerHTML='<div class="empty">Failed to load folders. Check connection.</div>';}
+}
+
+async function selectDriveFolder(folderId, folderName){
+  toast(`📂 Loading "${folderName}"...`,5000);
+  document.querySelectorAll('.folder-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('fc_'+folderId)?.classList.add('active');
+  try{
+    // Get all files in folder
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,size)&pageSize=50`,{headers:{Authorization:'Bearer '+accessToken}});
+    const data=await res.json();
+    const files=data.files||[];
+    const fEl=document.getElementById('ff_'+folderId);
+    if(fEl)fEl.textContent=`${files.length} file(s) found`;
+    if(!files.length){toast(`📁 Folder empty — no files found`);return;}
+    // Read text content from files
+    driveContext='';
+    driveContextFiles=[];
+    let loaded=0;
+    for(const file of files.slice(0,10)){
+      const content=await readDriveFile(file);
+      if(content){
+        driveContext+=`\n\n--- FILE: ${file.name} ---\n${content}`;
+        driveContextFiles.push(file.name);
+        loaded++;
+      }
+    }
+    if(loaded>0){
+      // Update context bar
+      document.getElementById('ctxText').textContent=`📁 "${folderName}" — ${loaded} file(s) loaded as context`;
+      document.getElementById('ctxFiles').textContent=driveContextFiles.slice(0,3).join(', ')+(driveContextFiles.length>3?'...':'');
+      document.getElementById('contextBar').classList.add('show');
+      // Update client bar if client is active
+      if(activeClient){
+        document.getElementById('acDriveTag').style.display='block';
+        document.getElementById('acWrap').classList.add('has-drive');
+      }
+      toast(`✅ ${loaded} files loaded from "${folderName}"!`);
+      closePanel('drivePanel');
+    }else{
+      toast(`⚠️ Could not read files from this folder`);
+    }
+  }catch(e){toast('❌ Error loading folder: '+e.message);}
+}
+
+async function readDriveFile(file){
+  try{
+    const exportMimes={
+      'application/vnd.google-apps.document':'text/plain',
+      'application/vnd.google-apps.spreadsheet':'text/csv',
+      'application/vnd.google-apps.presentation':'text/plain'
+    };
+    let url;
+    if(exportMimes[file.mimeType]){
+      url=`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${exportMimes[file.mimeType]}`;
+    }else if(file.mimeType==='text/plain'||file.mimeType==='text/csv'){
+      url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+    }else{return null;}
+    const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    const text=await res.text();
+    return text.substring(0,3000); // limit per file
+  }catch{return null;}
+}
+
+function clearDriveContext(){
+  driveContext='';driveContextFiles=[];
+  document.getElementById('contextBar').classList.remove('show');
+  document.getElementById('acDriveTag').style.display='none';
+  document.getElementById('acWrap').classList.remove('has-drive');
+  toast('Drive context cleared');
+}
+
+// CLIENT DB
+function addClient(){
+  const name=document.getElementById('cfN').value.trim();
+  if(!name){toast('⚠️ Client name required!');return;}
+  const clients=ls.get('clients',[]);
+  clients.unshift({id:Date.now(),name,phone:document.getElementById('cfPh').value.trim(),gst:document.getElementById('cfG').value.trim(),pan:document.getElementById('cfP').value.trim(),issue:document.getElementById('cfI').value.trim(),date:new Date().toLocaleDateString('en-IN')});
+  ls.set('clients',clients);
+  ['cfN','cfPh','cfG','cfP','cfI'].forEach(id=>document.getElementById(id).value='');
+  renderClients();
+  toast(`✓ ${name} saved!`);
+}
+
+function renderClients(){
+  const clients=ls.get('clients',[]);
+  const el=document.getElementById('cList');
+  if(!clients.length){el.innerHTML='<div class="empty">No clients yet.<br>Add your first client above.</div>';return;}
+  el.innerHTML=clients.map(c=>`
+    <div class="ccard ${activeClient?.id===c.id?'active':''}">
+      <div class="cc-info">
+        <div class="cc-name">👤 ${c.name}</div>
+        <div class="cc-meta">${[c.phone,c.gst,c.pan].filter(Boolean).join(' · ')||'No details'}</div>
+        ${c.issue?`<div class="cc-issue">${c.issue.substring(0,80)}...</div>`:''}
+      </div>
+      <div class="cc-btns">
+        <button class="cc-btn cc-use" onclick="selectClient(${c.id})">Use</button>
+        <button class="cc-btn cc-del" onclick="delClient(${c.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function selectClient(id){
+  const c=ls.get('clients',[]).find(x=>x.id===id);
+  if(!c)return;
+  activeClient=c;
+  document.getElementById('acPh').style.display='none';
+  document.getElementById('acInfo').style.display='block';
+  document.getElementById('acName').textContent=c.name;
+  document.getElementById('acSub').textContent=[c.phone,c.gst].filter(Boolean).join(' · ')||'Client selected';
+  if(driveContext)document.getElementById('acDriveTag').style.display='block';
+  document.getElementById('acX').classList.add('show');
+  closePanel('cPanel');
+  toast(`✓ ${c.name} selected`);
+}
+
+function clearClient(e){
+  e.stopPropagation();
+  activeClient=null;
+  document.getElementById('acPh').style.display='';
+  document.getElementById('acInfo').style.display='none';
+  document.getElementById('acX').classList.remove('show');
+}
+
+function delClient(id){
+  ls.set('clients',ls.get('clients',[]).filter(x=>x.id!==id));
+  if(activeClient?.id===id)clearClient({stopPropagation:()=>{}});
+  renderClients();toast('Deleted');
+}
+
+// SAVED
+function saveOutput(content,mode){
+  const saved=ls.get('saved',[]);
+  saved.unshift({id:Date.now(),content,mode,date:new Date().toLocaleDateString('en-IN'),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
+  if(saved.length>60)saved.splice(60);
+  ls.set('saved',saved);toast('✓ Saved!');
+}
+
+function renderSaved(){
+  const saved=ls.get('saved',[]);
+  const el=document.getElementById('sList');
+  const ML={whatsapp:'📱 WhatsApp',legal:'⚖️ Legal',social:'📸 Social',blog:'✍️ Blog',email:'📧 Email',notice:'🔍 Notice'};
+  if(!saved.length){el.innerHTML='<div class="empty">No saved outputs yet.</div>';return;}
+  el.innerHTML=saved.map(s=>`
+    <div class="scard">
+      <div class="sc-hdr"><span class="sc-badge">${ML[s.mode]||s.mode}</span><span class="sc-date">${s.date} ${s.time}</span></div>
+      <div class="sc-prev">${s.content.substring(0,130)}...</div>
+      <div class="sc-btns">
+        <button class="sc-btn sc-copy" onclick="copyS(${s.id})">⎘ Copy</button>
+        <button class="sc-btn sc-reuse" onclick="reuseS(${s.id})">↩ Reuse</button>
+        <button class="sc-btn sc-del" onclick="delS(${s.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function copyS(id){const s=ls.get('saved',[]).find(x=>x.id==id);if(s){navigator.clipboard.writeText(s.content);toast('✓ Copied!');}}
+function reuseS(id){const s=ls.get('saved',[]).find(x=>x.id==id);if(s){document.getElementById('userInput').value='Improve this: '+s.content.substring(0,100);closePanel('sPanel');}}
+function delS(id){ls.set('saved',ls.get('saved',[]).filter(x=>x.id!=id));renderSaved();toast('Deleted');}
+
+// FILE ATTACH
+function handleFiles(e){Array.from(e.target.files).forEach(f=>{if(f.type.startsWith('image/'))readImg(f);});e.target.value='';}
+function readImg(file){const r=new FileReader();r.onload=ev=>{attachedImages.push({b64:ev.target.result.split(',')[1],type:file.type,url:ev.target.result});renderAttach();};r.readAsDataURL(file);}
+function renderAttach(){
+  const el=document.getElementById('attachRow');
+  if(!attachedImages.length){el.innerHTML='';return;}
+  el.innerHTML=attachedImages.map((img,i)=>`<div class="att-thumb"><img src="${img.url}"/><button class="att-rm" onclick="rmAttach(${i})">✕</button></div>`).join('');
+}
+function rmAttach(i){attachedImages.splice(i,1);renderAttach();}
+
+document.addEventListener('paste',e=>{
+  Array.from(e.clipboardData?.items||[]).forEach(item=>{
+    if(item.type.startsWith('image/')){const f=item.getAsFile();if(f)readImg(f);}
+  });
+});
+
+// VOICE
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Use Chrome for voice');return;}
+  isRecording?stopVoice():startVoice();
+}
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.continuous=false;recognition.interimResults=true;recognition.lang='ta-IN';
+  recognition.onstart=()=>{isRecording=true;document.getElementById('voiceBtn').classList.add('rec');document.getElementById('voiceBtn').textContent='🔴';toast('🎙️ Listening...');};
+  recognition.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');const i=document.getElementById('userInput');i.value=t;autoResize(i);};
+  recognition.onerror=recognition.onend=()=>stopVoice();
+  recognition.start();
+}
+function stopVoice(){isRecording=false;const b=document.getElementById('voiceBtn');b.classList.remove('rec');b.textContent='🎙️';if(recognition)recognition.stop();}
+
+// SYSTEM PROMPT
+function buildSP(){
+  const mi={whatsapp:'Output: WhatsApp message. Conversational, emojis ok, CTA included. Under 300 words unless detailed.',legal:'Output: Formal legal letter. Cite CGST/TNGST/IT Act sections precisely. Structure: Subject/Facts/Legal Grounds/Prayer. No emojis.',social:'Output: Social media post. Strong hook first. Line breaks. Hashtags at end.',blog:'Output: SEO blog post. Bold subheadings. 400+ words for medium.',email:'Output: Professional email with Subject line. Formal tone.',notice:'Output: Notice analysis. Sections: Summary/Legal Provisions/Risk Level/Action Plan/Documents/Deadline.'};
+  const li={bilingual:'Language: English + formal Tamil Unicode script. NO Tanglish.',tamil:'Language: Formal Tamil Unicode script only. NO Tanglish.',english:'Language: English only.'};
+  const lni={short:'Length: Under 150 words.',medium:'Length: 150-350 words.',detailed:'Length: 350+ words comprehensive.'};
+  const ri={client:'Recipient: Individual client — simple, reassuring, non-technical.',officer:'Recipient: Government Tax Officer — formal, legally precise.',bank:'Recipient: Bank Manager — professional, factual.',court:'Recipient: Court — highly formal, legal terminology.',public:'Recipient: General public — simple, engaging.'};
+  let driveCtxSection='';
+  if(driveContext){
+    driveCtxSection=`\n\nCLIENT DRIVE DOCUMENTS (use as reference for all outputs):\n${driveContext.substring(0,4000)}\n--- END OF DOCUMENTS ---\n`;
+  }
+  return `You are the dedicated AI assistant for Wintrust Solutions, Coimbatore, Tamil Nadu.
+
+FIRM: Kalai | Wintrust Solutions | wintrustsolutions.com | Coimbatore
+SERVICES: ITR (resident & NRI), GST registration & returns, TDS, accounting, home/business loans, insurance, MSME/Udyam, export compliance (IEC,LUT,eBRC,FEMA)
+AUDIENCE: MSMEs, salaried, NRIs, small businesses in Coimbatore & Tamil Nadu
+
+COMPLIANCE: CGST Act 2017, TNGST Act 2017, IT Act 1961
+DRC: DRC-01=demand, DRC-03=voluntary payment, DRC-07=order, DRC-13=bank attachment
+Sec 79=recovery, Sec 107=appeal, Sec 161=rectification
+Verify deadlines at cbic.gov.in${driveCtxSection}
+
+OUTPUT: Deliver DIRECTLY — zero preamble. Never start with Sure/Certainly/Here is. Tamil=proper Unicode only. Copy-paste ready.
+
+${mi[S.mode]||mi.whatsapp}
+${li[S.lang]||li.bilingual}
+${lni[S.len]||lni.medium}
+${ri[S.recip]||ri.client}`;
+}
+
+// MESSAGES
+const ML={whatsapp:'📱 WhatsApp',legal:'⚖️ Legal',social:'📸 Social',blog:'✍️ Blog',email:'📧 Email',notice:'🔍 Notice'};
+function addMsg(role,content,mode,imgUrls){
+  document.getElementById('welcome')?.remove();
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');div.className=`msg ${role==='user'?'user':'ai'}`;
+  const av=document.createElement('div');av.className=`av ${role==='user'?'u':'ai'}`;av.textContent=role==='user'?'👤':'W';
+  const bub=document.createElement('div');bub.className='bubble';
+  let html='';
+  if(imgUrls?.length)imgUrls.forEach(u=>{html+=`<img class="img-prev" src="${u}"/><br>`;});
+  if(role==='ai'&&mode)html+=`<span class="m-badge">${ML[mode]||mode}</span><br>`;
+  html+=fmtText(content);
+  bub.innerHTML=html;div.appendChild(av);div.appendChild(bub);chat.appendChild(div);
+  if(role==='ai'){
+    const acts=document.createElement('div');acts.className='msg-acts';
+    const cp=document.createElement('button');cp.className='act-btn';cp.textContent='⎘ Copy';
+    cp.onclick=()=>{navigator.clipboard.writeText(content);cp.textContent='✓ Copied!';setTimeout(()=>cp.textContent='⎘ Copy',2000);};
+    const sv=document.createElement('button');sv.className='act-btn save-act';sv.textContent='💾 Save';
+    const cm=mode;sv.onclick=()=>{saveOutput(content,cm);sv.textContent='✓ Saved!';setTimeout(()=>sv.textContent='💾 Save',2000);};
+    const wa=document.createElement('button');wa.className='act-btn';wa.textContent='📱 Send';
+    wa.onclick=()=>window.open(`https://wa.me/?text=${encodeURIComponent(content)}`);
+    acts.appendChild(cp);acts.appendChild(sv);acts.appendChild(wa);chat.appendChild(acts);
+  }
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function fmtText(t){
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s(.+)$/gm,'<strong>$1</strong>').replace(/^[-*]\s(.+)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>').replace(/\n\n/g,'</p><p style="margin-top:4px">').replace(/\n/g,'<br>');
+}
+
+function showThink(){
+  const c=document.getElementById('chat');
+  const d=document.createElement('div');d.className='thinking';d.id='think';
+  d.innerHTML=`<div class="av ai">W</div><div class="think-bub"><div class="dots"><i></i><i></i><i></i></div><span class="think-txt">${driveContext?'Reading client documents...':'Crafting your output...'}</span></div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function hideThink(){document.getElementById('think')?.remove();}
+
+// SEND
+async function send(){
+  if(isLoading)return;
+  const inp=document.getElementById('userInput');
+  let text=inp.value.trim();
+  if(!text&&!attachedImages.length)return;
+  if(!text)text='Analyze this image and provide the relevant output.';
+  inp.value='';inp.style.height='auto';
+  isLoading=true;document.getElementById('sendBtn').disabled=true;
+  if(isRecording)stopVoice();
+
+  let ctx='';
+  if(activeClient){
+    ctx=`CLIENT: ${activeClient.name}`;
+    if(activeClient.phone)ctx+=` | Phone: ${activeClient.phone}`;
+    if(activeClient.gst)ctx+=` | GSTIN: ${activeClient.gst}`;
+    if(activeClient.pan)ctx+=` | PAN: ${activeClient.pan}`;
+    if(activeClient.issue)ctx+=`\nCASE NOTES: ${activeClient.issue}`;
+  }
+  const fullText=ctx?`${ctx}\n\nTASK: ${text}`:text;
+  const imgUrls=attachedImages.map(i=>i.url);
+  addMsg('user',text,null,imgUrls);
+
+  let content;
+  if(attachedImages.length){
+    content=[...attachedImages.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.b64}})),{type:'text',text:fullText}];
+  }else{content=fullText;}
+
+  attachedImages=[];renderAttach();
+  messages.push({role:'user',content});
+  showThink();const cm=S.mode;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildSP(),messages})});
+    const data=await res.json();
+    hideThink();
+    const reply=data.content?.[0]?.text||'Something went wrong. Please try again.';
+    messages.push({role:'assistant',content:reply});
+    addMsg('ai',reply,cm);
+  }catch{
+    hideThink();
+    addMsg('ai','⚠️ Connection error. Please try again.');
+  }
+  isLoading=false;document.getElementById('sendBtn').disabled=false;inp.focus();
+}
+
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+
+updateChips();
+</script>
+</body>
+</html>
