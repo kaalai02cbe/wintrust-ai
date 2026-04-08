@@ -502,15 +502,26 @@ async function loadFolders(){
   }catch(e){grid.innerHTML='<div class="empty">Failed to load folders. Check connection.</div>';}
 }
 
+async function getFilesInFolder(folderId){
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,size)&pageSize=50&supportsAllDrives=true&includeItemsFromAllDrives=true`,{headers:{Authorization:'Bearer '+accessToken}});
+  const data=await res.json();
+  return data.files||[];
+}
+
 async function selectDriveFolder(folderId, folderName){
   toast(`📂 Loading "${folderName}"...`,5000);
   document.querySelectorAll('.folder-card').forEach(c=>c.classList.remove('active'));
   document.getElementById('fc_'+folderId)?.classList.add('active');
   try{
-    // Get all files in folder
-    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,size)&pageSize=50`,{headers:{Authorization:'Bearer '+accessToken}});
-    const data=await res.json();
-    const files=data.files||[];
+    // Get all files including from subfolders
+    let files=await getFilesInFolder(folderId);
+    // Also check one level of subfolders
+    const subfolders=files.filter(f=>f.mimeType==='application/vnd.google-apps.folder');
+    for(const sf of subfolders.slice(0,3)){
+      const subFiles=await getFilesInFolder(sf.id);
+      files=[...files,...subFiles.filter(f=>f.mimeType!=='application/vnd.google-apps.folder')];
+    }
+    files=files.filter(f=>f.mimeType!=='application/vnd.google-apps.folder');
     const fEl=document.getElementById('ff_'+folderId);
     if(fEl)fEl.textContent=`${files.length} file(s) found`;
     if(!files.length){toast(`📁 Folder empty — no files found`);return;}
@@ -576,20 +587,22 @@ async function readDriveFile(file){
     }
 
     if(directText.includes(file.mimeType)){
-      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&supportsAllDrives=true`;
       const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      if(!res.ok)return null;
       const text=await res.text();
       return {type:'text',content:text.substring(0,3000)};
     }
 
-    if(imageTypes.includes(file.mimeType)){
-      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+    if(imageTypes.includes(file.mimeType)||file.mimeType.startsWith('image/')){
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&supportsAllDrives=true`;
       const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      if(!res.ok)return null;
       const blob=await res.blob();
+      const actualType=blob.type||file.mimeType;
       const b64=await blobToBase64(blob);
-      // Use Claude to extract text from image
-      const extracted=await extractTextFromImage(b64,file.mimeType,file.name);
-      return {type:'text',content:extracted};
+      const extracted=await extractTextFromImage(b64,actualType,file.name);
+      return {type:'text',content:`[${file.name}]: ${extracted}`};
     }
 
     if(file.mimeType==='application/pdf'||
@@ -597,15 +610,14 @@ async function readDriveFile(file){
        file.mimeType==='application/msword'||
        file.mimeType==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'||
        file.mimeType==='application/vnd.ms-excel'){
-      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&supportsAllDrives=true`;
       const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      if(!res.ok)return null;
       const blob=await res.blob();
       const b64=await blobToBase64(blob);
-      // For PDF send as document to Claude
       if(file.mimeType==='application/pdf'){
         return {type:'pdf',b64,name:file.name};
       }
-      // For Word/Excel try text extraction via blob text
       const text=await blob.text();
       const cleaned=text.replace(/[^\x20-\x7E\n\t\u0B80-\u0BFF\u0900-\u097F]/g,' ').replace(/\s+/g,' ').trim();
       return {type:'text',content:(`[${file.name}]: `+cleaned).substring(0,2000)};
