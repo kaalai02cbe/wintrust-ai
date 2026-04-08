@@ -223,8 +223,8 @@ textarea::placeholder{color:var(--muted);}
 
 <!-- ⚙️ PASTE YOUR KEYS HERE -->
 <script>
-const API_KEY = 'AIzaSyDsyxa2FWORaBJtNqAznP9d3YyRl_XuElc';
-const CLIENT_ID = '71713290429-emirlb05nl5erlkjvrm7j0skpcfoj2l2.apps.googleusercontent.com';
+const API_KEY = 'YOUR_API_KEY_HERE';
+const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
 </script>
 
 <div class="toast" id="toast"></div>
@@ -408,7 +408,7 @@ const CLIENT_ID = '71713290429-emirlb05nl5erlkjvrm7j0skpcfoj2l2.apps.googleuserc
 let messages=[], isLoading=false, attachedImages=[], activeClient=null;
 let recognition=null, isRecording=false;
 let driveConnected=false, accessToken=null;
-let driveContext='', driveContextFiles=[];
+let driveContext='', driveContextFiles=[], driveContextImages=[];
 const S={mode:'whatsapp',lang:'bilingual',len:'medium',recip:'client'};
 const SCOPES='https://www.googleapis.com/auth/drive.readonly';
 
@@ -514,16 +514,21 @@ async function selectDriveFolder(folderId, folderName){
     const fEl=document.getElementById('ff_'+folderId);
     if(fEl)fEl.textContent=`${files.length} file(s) found`;
     if(!files.length){toast(`📁 Folder empty — no files found`);return;}
-    // Read text content from files
-    driveContext='';
-    driveContextFiles=[];
+    driveContext='';driveContextFiles=[];driveContextImages=[];
     let loaded=0;
+    toast(`📂 Reading ${files.length} file(s)...`,8000);
     for(const file of files.slice(0,10)){
-      const content=await readDriveFile(file);
-      if(content){
-        driveContext+=`\n\n--- FILE: ${file.name} ---\n${content}`;
-        driveContextFiles.push(file.name);
-        loaded++;
+      const result=await readDriveFile(file);
+      if(result){
+        if(result.type==='text'&&result.content){
+          driveContext+=`\n\n--- FILE: ${file.name} ---\n${result.content}`;
+          driveContextFiles.push(file.name);
+          loaded++;
+        }else if(result.type==='pdf'&&result.b64){
+          driveContextImages.push({type:'pdf',b64:result.b64,name:file.name});
+          driveContextFiles.push(`📄 ${file.name}`);
+          loaded++;
+        }
       }
     }
     if(loaded>0){
@@ -546,21 +551,99 @@ async function selectDriveFolder(folderId, folderName){
 
 async function readDriveFile(file){
   try{
+    // Google native formats — export as text
     const exportMimes={
       'application/vnd.google-apps.document':'text/plain',
       'application/vnd.google-apps.spreadsheet':'text/csv',
-      'application/vnd.google-apps.presentation':'text/plain'
+      'application/vnd.google-apps.presentation':'text/plain',
+      'application/vnd.google-apps.form':'text/plain'
     };
-    let url;
+
+    // Plain text / CSV — download directly
+    const directText=['text/plain','text/csv','text/html','application/json'];
+
+    // Image types — use Claude vision
+    const imageTypes=['image/jpeg','image/png','image/gif','image/webp','image/jpg'];
+
+    // PDF — download as base64 and send to Claude
+    // Word/Excel — download as base64 and send to Claude
+
     if(exportMimes[file.mimeType]){
-      url=`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${exportMimes[file.mimeType]}`;
-    }else if(file.mimeType==='text/plain'||file.mimeType==='text/csv'){
-      url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
-    }else{return null;}
-    const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
-    const text=await res.text();
-    return text.substring(0,3000); // limit per file
-  }catch{return null;}
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${exportMimes[file.mimeType]}`;
+      const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      const text=await res.text();
+      return {type:'text',content:text.substring(0,3000)};
+    }
+
+    if(directText.includes(file.mimeType)){
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      const text=await res.text();
+      return {type:'text',content:text.substring(0,3000)};
+    }
+
+    if(imageTypes.includes(file.mimeType)){
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      const blob=await res.blob();
+      const b64=await blobToBase64(blob);
+      // Use Claude to extract text from image
+      const extracted=await extractTextFromImage(b64,file.mimeType,file.name);
+      return {type:'text',content:extracted};
+    }
+
+    if(file.mimeType==='application/pdf'||
+       file.mimeType==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'||
+       file.mimeType==='application/msword'||
+       file.mimeType==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'||
+       file.mimeType==='application/vnd.ms-excel'){
+      const url=`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+      const res=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+      const blob=await res.blob();
+      const b64=await blobToBase64(blob);
+      // For PDF send as document to Claude
+      if(file.mimeType==='application/pdf'){
+        return {type:'pdf',b64,name:file.name};
+      }
+      // For Word/Excel try text extraction via blob text
+      const text=await blob.text();
+      const cleaned=text.replace(/[^\x20-\x7E\n\t\u0B80-\u0BFF\u0900-\u097F]/g,' ').replace(/\s+/g,' ').trim();
+      return {type:'text',content:(`[${file.name}]: `+cleaned).substring(0,2000)};
+    }
+
+    return null;
+  }catch(e){
+    console.error('readDriveFile error:',e);
+    return null;
+  }
+}
+
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function extractTextFromImage(b64,mimeType,fileName){
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mimeType,data:b64}},
+          {type:'text',text:`Extract all text and key information from this document image "${fileName}". Return only the extracted content, no commentary.`}
+        ]}]
+      })
+    });
+    const data=await res.json();
+    return data.content?.[0]?.text||'';
+  }catch{return '';}
 }
 
 function clearDriveContext(){
@@ -780,8 +863,10 @@ async function send(){
   addMsg('user',text,null,imgUrls);
 
   let content;
-  if(attachedImages.length){
-    content=[...attachedImages.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.b64}})),{type:'text',text:fullText}];
+  if(attachedImages.length||driveContextImages.length){
+    const imgParts=attachedImages.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.b64}}));
+    const pdfParts=driveContextImages.map(p=>({type:'document',source:{type:'base64',media_type:'application/pdf',data:p.b64}}));
+    content=[...pdfParts,...imgParts,{type:'text',text:fullText}];
   }else{content=fullText;}
 
   attachedImages=[];renderAttach();
